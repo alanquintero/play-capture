@@ -9,11 +9,21 @@
   <body>
     <main>
       <header>
-        <div class="logo" aria-hidden="true"><span></span></div>
-        <div>
-          <h1>Play Capture</h1>
-          <p>Record video from this tab</p>
+        <div class="brand">
+          <div class="logo" aria-hidden="true"><span></span></div>
+          <div>
+            <h1>Play Capture</h1>
+            <p>Record video from this tab</p>
+          </div>
         </div>
+        <a class="support-link" href="https://buymeacoffee.com/alanquintero" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 8h12v5.5a5.5 5.5 0 0 1-5.5 5.5h-1A5.5 5.5 0 0 1 5 13.5V8Z"></path>
+            <path d="M17 10h1a3 3 0 0 1 0 6h-2"></path>
+            <path d="M8 5.5c0-1 1-1 1-2M12 5.5c0-1 1-1 1-2"></path>
+          </svg>
+          <span>Support the<br>Developer</span>
+        </a>
       </header>
 
       <section id="capture-card" class="capture-card">
@@ -43,7 +53,10 @@
             <h2>Saved recordings</h2>
             <span id="recording-count">0</span>
           </div>
-          <button id="clear-recordings" class="clear-button" type="button" hidden>Clear all</button>
+          <div class="library-actions">
+            <button id="download-pending" class="download-all-button" type="button" hidden>Download all</button>
+            <button id="clear-recordings" class="clear-button" type="button" hidden>Clear all</button>
+          </div>
         </div>
         <div id="empty-state" class="empty-state">
           <div class="empty-icon" aria-hidden="true">▶</div>

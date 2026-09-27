@@ -11,6 +11,9 @@ const DEFAULT_STATE = {
 };
 
 let creatingOffscreenDocument;
+let recordingMutation = Promise.resolve();
+let pendingDownloadMutation = Promise.resolve();
+const activeDownloadRecordings = new Map();
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   const current = await chrome.storage.session.get("captureState");
@@ -95,6 +98,10 @@ async function handleMessage(message, sender) {
     case "DOWNLOAD_RECORDING":
       await ensureOffscreenDocument();
       return downloadRecording(message.id);
+
+    case "DOWNLOAD_PENDING_RECORDINGS":
+      await ensureOffscreenDocument();
+      return downloadPendingRecordings();
 
     case "DELETE_RECORDING":
       await ensureOffscreenDocument();
@@ -236,8 +243,12 @@ async function markRecordingStarted(message) {
 }
 
 async function markRecordingReady(recording) {
-  const recordings = await getRecordings();
-  await chrome.storage.local.set({ recordings: [recording, ...recordings].slice(0, 50) });
+  await mutateRecordings((recordings) => [{
+    ...recording,
+    downloadStatus: "not_downloaded",
+    downloadError: "",
+    downloadedAt: null,
+  }, ...recordings].slice(0, 50));
   await setCaptureState(DEFAULT_STATE);
   await setBadge("1", "#047857");
   chrome.runtime.sendMessage({ type: "RECORDING_LIST_CHANGED" }).catch(() => {});
@@ -253,8 +264,7 @@ async function markRecordingError(error) {
 async function deleteRecording(id) {
   const result = await sendToOffscreen({ type: "DELETE_RECORDING", id });
   if (!result?.ok) return result;
-  const recordings = (await getRecordings()).filter((recording) => recording.id !== id);
-  await chrome.storage.local.set({ recordings });
+  const recordings = await mutateRecordings((current) => current.filter((recording) => recording.id !== id));
   if (!recordings.length) await setBadge("", "#047857");
   return { ok: true };
 }
@@ -262,20 +272,50 @@ async function deleteRecording(id) {
 async function clearRecordings() {
   const result = await sendToOffscreen({ type: "CLEAR_RECORDINGS" });
   if (!result?.ok) return result;
-  await chrome.storage.local.set({ recordings: [] });
+  await mutateRecordings(() => []);
+  activeDownloadRecordings.clear();
+  await mutatePendingDownloads(() => ({}));
   await setBadge("", "#047857");
   return { ok: true };
 }
 
-async function downloadRecording(id) {
-  const prepared = await sendToOffscreen({ type: "PREPARE_DOWNLOAD", id });
-  if (!prepared?.ok) return prepared;
-  const downloadId = await chrome.downloads.download({
-    url: prepared.url,
-    filename: prepared.filename,
-    saveAs: true,
-  });
-  return { ok: true, downloadId };
+async function downloadRecording(id, saveAs = true) {
+  await setRecordingDownloadState(id, "downloading");
+  try {
+    const prepared = await sendToOffscreen({ type: "PREPARE_DOWNLOAD", id });
+    if (!prepared?.ok) throw new Error(prepared?.error || "The saved recording could not be prepared.");
+    const downloadId = await chrome.downloads.download({
+      url: prepared.url,
+      filename: prepared.filename,
+      saveAs,
+    });
+    if (!Number.isInteger(downloadId)) throw new Error("Chrome did not start the download.");
+    activeDownloadRecordings.set(downloadId, id);
+    await mutatePendingDownloads((pendingDownloads) => ({
+      ...pendingDownloads,
+      [downloadId]: id,
+    }));
+    return { ok: true, downloadId };
+  } catch (error) {
+    await setRecordingDownloadState(id, "error", normalizeDownloadError(error));
+    throw error;
+  }
+}
+
+async function downloadPendingRecordings() {
+  const recordings = await getRecordings();
+  const pending = recordings.filter((recording) => ["not_downloaded", "error"].includes(recording.downloadStatus));
+  let started = 0;
+  let failed = 0;
+  for (const recording of pending) {
+    try {
+      await downloadRecording(recording.id, false);
+      started += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+  return { ok: true, started, failed };
 }
 
 async function ensureOffscreenDocument() {
@@ -313,7 +353,70 @@ function setCaptureState(state) {
 
 async function getRecordings() {
   const { recordings = [] } = await chrome.storage.local.get("recordings");
-  return recordings;
+  return recordings.map((recording) => ({
+    ...recording,
+    downloadStatus: recording.downloadStatus || "not_downloaded",
+    downloadError: recording.downloadError || "",
+    downloadedAt: recording.downloadedAt || null,
+  }));
+}
+
+function mutateRecordings(mutator) {
+  const mutation = recordingMutation.then(async () => {
+    const recordings = await getRecordings();
+    const updated = mutator(recordings);
+    await chrome.storage.local.set({ recordings: updated });
+    return updated;
+  });
+  recordingMutation = mutation.catch(() => {});
+  return mutation;
+}
+
+function setRecordingDownloadState(id, downloadStatus, downloadError = "") {
+  return mutateRecordings((recordings) => recordings.map((recording) => recording.id === id
+    ? {
+      ...recording,
+      downloadStatus,
+      downloadError,
+      downloadedAt: downloadStatus === "downloaded" ? Date.now() : recording.downloadedAt || null,
+    }
+    : recording));
+}
+
+async function getPendingDownloads() {
+  const { pendingDownloads = {} } = await chrome.storage.local.get("pendingDownloads");
+  return pendingDownloads;
+}
+
+async function finishTrackedDownload(downloadId, downloadStatus, downloadError = "") {
+  let recordingId = activeDownloadRecordings.get(downloadId);
+  activeDownloadRecordings.delete(downloadId);
+  await mutatePendingDownloads((pendingDownloads) => {
+    recordingId ||= pendingDownloads[downloadId];
+    const updated = { ...pendingDownloads };
+    delete updated[downloadId];
+    return updated;
+  });
+  if (!recordingId) return;
+  await setRecordingDownloadState(recordingId, downloadStatus, downloadError);
+}
+
+function mutatePendingDownloads(mutator) {
+  const mutation = pendingDownloadMutation.then(async () => {
+    const pendingDownloads = await getPendingDownloads();
+    const updated = mutator(pendingDownloads);
+    await chrome.storage.local.set({ pendingDownloads: updated });
+    return updated;
+  });
+  pendingDownloadMutation = mutation.catch(() => {});
+  return mutation;
+}
+
+function normalizeDownloadError(error) {
+  const message = typeof error === "string" ? error : error?.message;
+  if (!message) return "Chrome could not finish the download.";
+  if (/cancel|user canceled/i.test(message)) return "The download was canceled.";
+  return message;
 }
 
 async function getOutputFormat() {
@@ -350,5 +453,13 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   const state = await getCaptureState();
   if (state.tabId === tabId && ["armed", "starting_recording", "recording", "paused_waiting"].includes(state.status)) {
     chrome.tabs.sendMessage(tabId, { type: "ARM_VIDEO", armedAt: Date.now() }).catch(() => {});
+  }
+});
+
+chrome.downloads.onChanged.addListener((delta) => {
+  if (delta.state?.current === "complete") {
+    return finishTrackedDownload(delta.id, "downloaded").catch(() => {});
+  } else if (delta.state?.current === "interrupted") {
+    return finishTrackedDownload(delta.id, "error", normalizeDownloadError(delta.error?.current)).catch(() => {});
   }
 });

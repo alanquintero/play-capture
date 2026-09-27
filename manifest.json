@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Play Capture",
-  "version": "0.7.1",
+  "version": "1.0.0",
   "description": "Record the visible video and audio from the current tab, then save it as MP4 or WebM.",
   "minimum_chrome_version": "116",
   "permissions": [

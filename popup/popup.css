@@ -19,7 +19,8 @@ body {
 
 main { padding: 22px; }
 
-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.brand { display: flex; min-width: 0; align-items: center; gap: 12px; }
 
 .logo {
   display: grid;
@@ -43,6 +44,26 @@ header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 h1, h2, p { margin: 0; }
 h1 { font-size: 18px; letter-spacing: -.02em; }
 header p { margin-top: 2px; color: #647269; font-size: 12px; }
+
+.support-link {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border: 1px solid #cbd9ce;
+  border-radius: 10px;
+  color: #2c6247;
+  background: rgba(255, 255, 255, .72);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-decoration: none;
+  transition: border-color .15s, background .15s, color .15s, transform .15s;
+}
+.support-link svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.support-link:hover { border-color: #89aa92; color: #163d2b; background: #fff; transform: translateY(-1px); }
+.support-link:focus-visible { outline: 3px solid rgba(37, 99, 235, .25); outline-offset: 2px; }
 
 .capture-card {
   padding: 18px;
@@ -96,8 +117,12 @@ button { font: inherit; }
 .section-heading-title { display: flex; align-items: center; gap: 8px; }
 .section-heading h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: #516058; }
 .section-heading span { min-width: 24px; padding: 3px 7px; border-radius: 999px; background: #e3e9e3; text-align: center; font-size: 11px; font-weight: 700; }
-.clear-button { padding: 5px 8px; border: 1px solid #ced9d0; border-radius: 8px; color: #647269; background: #fff; cursor: pointer; font-size: 11px; font-weight: 700; }
+.library-actions { display: flex; gap: 5px; }
+.clear-button, .download-all-button { padding: 5px 8px; border: 1px solid #ced9d0; border-radius: 8px; color: #647269; background: #fff; cursor: pointer; font-size: 11px; font-weight: 700; }
+.download-all-button { border-color: #163d2b; color: #163d2b; }
 .clear-button:hover { color: #25342b; border-color: #9fb1a3; }
+.download-all-button:hover { color: #fff; background: #163d2b; }
+.clear-button:disabled, .download-all-button:disabled { cursor: wait; opacity: .6; }
 
 .empty-state { padding: 28px 20px; border: 1px dashed #cdd8cf; border-radius: 15px; color: #718078; text-align: center; font-size: 12px; }
 .empty-icon { display: grid; place-items: center; width: 35px; height: 35px; margin: 0 auto 9px; border-radius: 50%; color: #2c6247; background: #dff2e4; font-size: 11px; }
@@ -106,10 +131,16 @@ button { font: inherit; }
 .recording-item { min-width: 0; padding: 12px; border: 1px solid #dce4dd; border-radius: 14px; background: #fff; overflow: hidden; }
 .recording-title { overflow: hidden; color: #25342b; font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .recording-meta { margin-top: 4px; color: #718078; font-size: 11px; }
+.download-status { display: inline-flex; align-items: center; gap: 5px; margin-top: 7px; color: #647269; font-size: 10px; font-weight: 700; }
+.download-status::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
+.download-status.downloading { color: #2563eb; }
+.download-status.downloaded { color: #047857; }
+.download-status.error { color: #b42318; cursor: help; }
 .recording-actions { display: flex; width: 100%; min-width: 0; gap: 7px; margin-top: 10px; }
 .recording-actions button { min-width: 0; padding: 7px 10px; border: 1px solid #ced9d0; border-radius: 8px; background: #f7faf7; cursor: pointer; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .recording-actions .download { flex: 1; border-color: #163d2b; color: white; background: #163d2b; }
 .recording-actions .remove { flex: 0 0 auto; color: #9f241d; }
+.recording-actions button:disabled { cursor: wait; opacity: .6; }
 
 footer { margin-top: 18px; color: #89958e; text-align: center; font-size: 10px; }
 

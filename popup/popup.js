@@ -6,6 +6,7 @@ const elements = {
   primaryButton: document.querySelector("#primary-button"),
   primaryLabel: document.querySelector("#primary-label"),
   outputFormat: document.querySelector("#output-format"),
+  downloadPending: document.querySelector("#download-pending"),
   clearRecordings: document.querySelector("#clear-recordings"),
   dismissError: document.querySelector("#dismiss-error"),
   count: document.querySelector("#recording-count"),
@@ -52,6 +53,17 @@ elements.clearRecordings.addEventListener("click", async () => {
   await refresh();
 });
 
+elements.downloadPending.addEventListener("click", async () => {
+  elements.downloadPending.disabled = true;
+  const response = await sendMessage({ type: "DOWNLOAD_PENDING_RECORDINGS" });
+  if (!response?.ok) {
+    state.capture = { status: "error", error: response?.error || "The downloads could not be started." };
+    render();
+    return;
+  }
+  await refresh();
+});
+
 elements.list.addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-action]");
   if (!button) return;
@@ -66,8 +78,7 @@ elements.list.addEventListener("click", async (event) => {
     render();
     return;
   }
-  if (button.dataset.action === "remove") await refresh();
-  else button.disabled = false;
+  await refresh();
 });
 
 chrome.runtime.onMessage.addListener((message) => {
@@ -125,6 +136,10 @@ function render() {
 
   const recordings = state.recordings || [];
   elements.count.textContent = recordings.length;
+  const pendingCount = recordings.filter((recording) => ["not_downloaded", "error"].includes(recording.downloadStatus || "not_downloaded")).length;
+  elements.downloadPending.hidden = pendingCount === 0;
+  elements.downloadPending.disabled = false;
+  elements.downloadPending.textContent = `Download all (${pendingCount})`;
   elements.clearRecordings.hidden = recordings.length === 0;
   elements.clearRecordings.disabled = false;
   elements.empty.hidden = recordings.length > 0;
@@ -145,13 +160,34 @@ function renderRecording(recording) {
   const dimensions = recording.width && recording.height ? ` · ${recording.width}×${recording.height}` : "";
   meta.textContent = `${formatDuration(recording.durationMs)} · ${formatBytes(recording.size)}${dimensions}`;
 
+  const downloadStatus = recording.downloadStatus || "not_downloaded";
+  const status = document.createElement("div");
+  status.className = `download-status ${downloadStatus}`;
+  status.textContent = {
+    not_downloaded: "Not downloaded",
+    downloading: "Downloading…",
+    downloaded: "Downloaded",
+    error: "Download failed",
+  }[downloadStatus] || "Not downloaded";
+  if (downloadStatus === "error" && recording.downloadError) status.title = recording.downloadError;
+
   const actions = document.createElement("div");
   actions.className = "recording-actions";
+  const format = recording.mimeType?.startsWith("video/mp4") ? "MP4" : "WebM";
+  const downloadLabel = downloadStatus === "downloaded"
+    ? `Download ${format} again`
+    : downloadStatus === "error"
+      ? `Retry ${format} download`
+      : downloadStatus === "downloading"
+        ? "Downloading…"
+        : `Download ${format}`;
+  const downloadButton = makeActionButton(downloadLabel, "download", recording.id);
+  downloadButton.disabled = downloadStatus === "downloading";
   actions.append(
-    makeActionButton(`Download ${recording.mimeType?.startsWith("video/mp4") ? "MP4" : "WebM"}`, "download", recording.id),
+    downloadButton,
     makeActionButton("Remove", "remove", recording.id),
   );
-  item.append(title, meta, actions);
+  item.append(title, meta, status, actions);
   return item;
 }
 

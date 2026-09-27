@@ -12,7 +12,7 @@ The recordings are intended to remain private and are not intended for redistrib
 
 ## Status
 
-The first public GitHub release is version 0.7.1. The project has automated unit coverage for the content-script video lifecycle, but browser-level capture tests are still manual.
+The current stable release is version 1.0.0. The project has automated unit coverage for the content-script video lifecycle, but browser-level capture tests are still manual.
 
 ## What it does
 
@@ -25,6 +25,8 @@ The first public GitHub release is version 0.7.1. The project has automated unit
 - Pauses the file immediately when the lesson is paused. It stays paused until playback resumes or you click **Finish now**; it does not stop automatically just because the video is paused.
 - Also provides a manual Stop button for custom players or live streams.
 - Stores finished recordings locally in extension storage until Download or Remove is clicked.
+- Shows whether each saved recording is not downloaded, downloading, downloaded, or failed.
+- Downloads every unfinished recording to Chrome's normal Downloads folder with **Download all**.
 - Does not upload video, browsing data, or recordings to a server.
 
 ## What this is—and is not
@@ -43,7 +45,7 @@ That tradeoff is deliberate. Stream downloaders can sometimes offer source-quali
 
 ## Install a GitHub release (non-developers)
 
-1. Open the [Play Capture Releases page](../../releases) and download the ZIP asset for the release you want, such as `play-capture-v0.7.1.zip`.
+1. Open the [Play Capture Releases page](../../releases) and download the ZIP asset for the release you want, such as `play-capture-v1.0.0.zip`.
 2. Unzip the downloaded file into a folder. Do not select the ZIP file itself in Chrome.
 3. Open `chrome://extensions` in Chrome 116 or newer.
 4. Enable **Developer mode**, click **Load unpacked**, and select the unzipped `play-capture` folder.
@@ -58,7 +60,9 @@ Chrome requires Developer mode for locally installed unpacked extensions. The re
 3. Press Play on the lesson video. Recording starts from that moment.
 4. If you pause the video, recording pauses too and remains paused indefinitely. Resume playback to continue, or click **Finish now** in the extension to save what has been captured.
 5. Keep the video tab open and playing. The popup can be closed.
-6. When the video ends, open the extension and download the finished recording. The file extension reflects the format Chrome actually selected.
+6. When the video ends, open the extension and download the finished recording. The item changes to **Downloaded** only after Chrome finishes saving the file. The file extension reflects the format Chrome actually selected.
+
+Use **Download all** to save every item marked **Not downloaded** or **Download failed**. Individual downloads still let you choose where to save the file; bulk downloads use Chrome's normal Downloads folder.
 
 If the player does not expose a normal HTML video end event, open the extension and click **Stop recording** yourself.
 
@@ -71,6 +75,7 @@ If the player does not expose a normal HTML video end event, open the extension 
 - A tab can only be captured after a user clicks the extension. Chrome does not allow silent automatic capture.
 - MP4 playback behavior depends on Chrome, the operating system, and the video player. WebM with Opus is available as an alternative if a particular player has trouble with MP4.
 - **Remove** removes the recording from this extension's local saved-recordings list and storage. It does not remove files you already downloaded to your Downloads folder. **Clear all** does the same for every saved recording.
+- **Downloaded** means Chrome finished the download successfully. The extension does not keep checking whether the file is later moved or deleted outside Chrome.
 
 Only record media you own or have permission to save.
 
@@ -102,16 +107,16 @@ npm test
 npm run package
 ```
 
-`npm run package` creates `dist/play-capture-v0.7.1.zip`. The archive contains only `manifest.json`, `background.js`, `content.js`, `offscreen/`, `popup/`, and `assets/`; tests, documentation, agent files, IDE files, and other development metadata are excluded. The packaging command uses only Node.js built-ins and adds no npm dependencies.
+`npm run package` creates `dist/play-capture-v1.0.0.zip`. The archive contains only `manifest.json`, `background.js`, `content.js`, `offscreen/`, `popup/`, and `assets/`; tests, documentation, agent files, IDE files, and other development metadata are excluded. The packaging command uses only Node.js built-ins and adds no npm dependencies.
 
 ## GitHub releases
 
 To prepare a release as a developer:
 
-1. Confirm the version in `package.json` and `manifest.json` is the same. The initial public release remains `0.7.1`.
+1. Confirm the version in `package.json` and `manifest.json` is the same. This release is `1.0.0`.
 2. Run `npm test` and `npm run package`.
 3. Inspect the ZIP in `dist/` and commit the source changes.
-4. Create and push a matching version tag, for example `git tag v0.7.1 && git push origin v0.7.1`.
+4. Create and push a matching version tag, for example `git tag v1.0.0 && git push origin v1.0.0`.
 
 The GitHub Actions workflow runs the tests and packaging command for `v*` tags, then attaches the generated ZIP to a GitHub Release. The package version is read from `package.json`, so the tag without its leading `v` must match it.
 
