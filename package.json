@@ -1,0 +1,10 @@
+{
+  "name": "play-capture",
+  "version": "0.7.1",
+  "private": true,
+  "description": "A local-only Chrome extension for recording video and audio from the active tab.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "package": "node scripts/package.js"
+  }
+}

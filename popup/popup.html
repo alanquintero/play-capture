@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Play Capture</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="logo" aria-hidden="true"><span></span></div>
+        <div>
+          <h1>Play Capture</h1>
+          <p>Record video from this tab</p>
+        </div>
+      </header>
+
+      <section id="capture-card" class="capture-card">
+        <div class="capture-topline">
+          <span id="status-dot" class="status-dot"></span>
+          <strong id="status-label">Ready to arm</strong>
+          <time id="timer" hidden>00:00</time>
+        </div>
+        <p id="status-detail">Click Start, then press Play on the video.</p>
+        <label class="format-row" for="output-format">
+          <span>File format</span>
+          <select id="output-format">
+            <option value="mp4">MP4 · recommended</option>
+            <option value="webm">WebM · alternative</option>
+          </select>
+        </label>
+        <button id="primary-button" class="primary-button" type="button">
+          <span class="record-icon" aria-hidden="true"></span>
+          <span id="primary-label">Start</span>
+        </button>
+        <button id="dismiss-error" class="text-button" type="button" hidden>Dismiss error</button>
+      </section>
+
+      <section class="library">
+        <div class="section-heading">
+          <div class="section-heading-title">
+            <h2>Saved recordings</h2>
+            <span id="recording-count">0</span>
+          </div>
+          <button id="clear-recordings" class="clear-button" type="button" hidden>Clear all</button>
+        </div>
+        <div id="empty-state" class="empty-state">
+          <div class="empty-icon" aria-hidden="true">▶</div>
+          <p>Your finished recordings will appear here.</p>
+        </div>
+        <div id="recording-list" class="recording-list"></div>
+      </section>
+
+      <footer>Files stay on this device.</footer>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

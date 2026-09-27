@@ -1,0 +1,22 @@
+.DS_Store
+*.log
+
+# Dependencies and generated JavaScript artifacts
+node_modules/
+coverage/
+dist/
+build/
+
+# Local editor and operating-system metadata
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local agent planning and session artifacts
+.agents/plans/**
+.claude/plans/**
+.claude/worktrees/**
+.claude/settings.local.json
+.claude/__pycache__/
+CLAUDE.local.md

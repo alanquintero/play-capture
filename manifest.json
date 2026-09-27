@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Play Capture",
+  "version": "0.7.1",
+  "description": "Record the visible video and audio from the current tab, then save it as MP4 or WebM.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "offscreen",
+    "storage",
+    "tabCapture",
+    "unlimitedStorage"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "icons": {
+    "16": "assets/icons/play-capture-16.png",
+    "32": "assets/icons/play-capture-32.png",
+    "48": "assets/icons/play-capture-48.png",
+    "128": "assets/icons/play-capture-128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Play Capture",
+    "default_icon": {
+      "16": "assets/icons/play-capture-16.png",
+      "32": "assets/icons/play-capture-32.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "all_frames": true,
+      "match_origin_as_fallback": true,
+      "run_at": "document_start"
+    }
+  ]
+}
