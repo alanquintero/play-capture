@@ -23,6 +23,10 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === "install" || details.previousVersion === "0.3.1") {
     await chrome.storage.local.set({ outputFormat: "mp4" });
   }
+  const { extensionEnabled } = await chrome.storage.local.get("extensionEnabled");
+  if (typeof extensionEnabled !== "boolean") {
+    await chrome.storage.local.set({ extensionEnabled: true });
+  }
 });
 
 chrome.runtime.onStartup.addListener(async () => {
@@ -61,7 +65,11 @@ async function handleMessage(message, sender) {
         capture: await getCaptureState(),
         recordings: await getRecordings(),
         outputFormat: await getOutputFormat(),
+        extensionEnabled: await getExtensionEnabled(),
       };
+
+    case "SET_EXTENSION_ENABLED":
+      return setExtensionEnabled(message.enabled);
 
     case "START_RECORDING":
       return startRecording(message.format);
@@ -122,6 +130,9 @@ async function handleMessage(message, sender) {
 }
 
 async function startRecording(requestedFormat) {
+  if (!await getExtensionEnabled()) {
+    throw new Error("Play Capture is off. Turn it on before starting a recording.");
+  }
   const state = await getCaptureState();
   if (["starting", "armed", "starting_recording", "recording", "paused_waiting", "stopping"].includes(state.status)) {
     throw new Error("A recording is already in progress.");
@@ -135,6 +146,7 @@ async function startRecording(requestedFormat) {
 
   const outputFormat = requestedFormat === "mp4" ? "mp4" : "webm";
   await chrome.storage.local.set({ outputFormat });
+  await injectContentScript(tab.id);
 
   await setCaptureState({
     ...DEFAULT_STATE,
@@ -169,7 +181,7 @@ async function startRecording(requestedFormat) {
   await setBadge("WAIT", "#2563eb");
 
   // The content script starts MediaRecorder only after the lesson video plays.
-  chrome.tabs.sendMessage(tab.id, { type: "ARM_VIDEO", armedAt: Date.now() }).catch(() => {});
+  await chrome.tabs.sendMessage(tab.id, { type: "ARM_VIDEO", armedAt: Date.now() });
   return { ok: true };
 }
 
@@ -226,6 +238,7 @@ async function stopRecording(reason) {
   await setCaptureState({ ...state, status: "stopping" });
   await setBadge("…", "#d97706");
   const response = await sendToOffscreen({ type: "STOP_RECORDING", reason });
+  chrome.tabs.sendMessage(state.tabId, { type: "DISARM_VIDEO" }).catch(() => {});
   if (!response?.ok) throw new Error(response?.error || "The recorder could not stop cleanly.");
   if (response.discarded) {
     await setCaptureState(DEFAULT_STATE);
@@ -424,6 +437,34 @@ async function getOutputFormat() {
   return outputFormat;
 }
 
+async function getExtensionEnabled() {
+  const { extensionEnabled = true } = await chrome.storage.local.get("extensionEnabled");
+  return extensionEnabled !== false;
+}
+
+async function setExtensionEnabled(enabled) {
+  const state = await getCaptureState();
+  if (!enabled && ["starting", "armed", "starting_recording", "recording", "paused_waiting", "stopping"].includes(state.status)) {
+    throw new Error("Finish the current recording before turning Play Capture off.");
+  }
+  const nextEnabled = Boolean(enabled);
+  await chrome.storage.local.set({ extensionEnabled: nextEnabled });
+  if (!nextEnabled) {
+    const tabs = await chrome.tabs.query({});
+    await Promise.allSettled(tabs
+      .filter((tab) => Number.isInteger(tab.id))
+      .map((tab) => chrome.tabs.sendMessage(tab.id, { type: "DISARM_VIDEO" })));
+  }
+  return { ok: true, extensionEnabled: nextEnabled };
+}
+
+function injectContentScript(tabId) {
+  return chrome.scripting.executeScript({
+    target: { tabId, allFrames: true },
+    files: ["content.js"],
+  });
+}
+
 async function setBadge(text, color) {
   await chrome.action.setBadgeBackgroundColor({ color });
   await chrome.action.setBadgeText({ text });
@@ -452,6 +493,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   if (changeInfo.status !== "complete") return;
   const state = await getCaptureState();
   if (state.tabId === tabId && ["armed", "starting_recording", "recording", "paused_waiting"].includes(state.status)) {
+    await injectContentScript(tabId).catch(() => {});
     chrome.tabs.sendMessage(tabId, { type: "ARM_VIDEO", armedAt: Date.now() }).catch(() => {});
   }
 });

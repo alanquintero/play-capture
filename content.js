@@ -1,25 +1,56 @@
-let armed = false;
-let activeVideo = null;
-let recordingActive = false;
-let disappearanceTimer = null;
-let pausedWaiting = false;
+(() => {
+  if (globalThis.playCaptureContentScriptLoaded) return;
+  globalThis.playCaptureContentScriptLoaded = true;
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type !== "ARM_VIDEO") return false;
-  armed = true;
-  recordingActive = false;
-  clearDisappearanceTimer();
-  pausedWaiting = false;
-  activeVideo = choosePlayingVideo();
-  observeVideos();
-  if (activeVideo) notifyVideoStarted();
-  sendResponse({ ok: true, watching: Boolean(activeVideo) });
-  return false;
-});
+  let armed = false;
+  let activeVideo = null;
+  let recordingActive = false;
+  let disappearanceTimer = null;
+  let pausedWaiting = false;
+  let observer = null;
+  let listenersAttached = false;
 
-document.addEventListener("play", onPlay, true);
-document.addEventListener("ended", onEnded, true);
-document.addEventListener("pause", onPause, true);
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type === "DISARM_VIDEO") {
+      disarmVideoMonitor();
+      sendResponse({ ok: true });
+      return false;
+    }
+    if (message?.type !== "ARM_VIDEO") return false;
+    armed = true;
+    recordingActive = false;
+    clearDisappearanceTimer();
+    pausedWaiting = false;
+    activeVideo = choosePlayingVideo();
+    attachVideoListeners();
+    observeVideos();
+    if (activeVideo) notifyVideoStarted();
+    sendResponse({ ok: true, watching: Boolean(activeVideo) });
+    return false;
+  });
+
+  function attachVideoListeners() {
+    if (listenersAttached) return;
+    document.addEventListener("play", onPlay, true);
+    document.addEventListener("ended", onEnded, true);
+    document.addEventListener("pause", onPause, true);
+    listenersAttached = true;
+  }
+
+  function disarmVideoMonitor() {
+    armed = false;
+    recordingActive = false;
+    activeVideo = null;
+    pausedWaiting = false;
+    clearDisappearanceTimer();
+    observer?.disconnect();
+    observer = null;
+    if (!listenersAttached) return;
+    document.removeEventListener("play", onPlay, true);
+    document.removeEventListener("ended", onEnded, true);
+    document.removeEventListener("pause", onPause, true);
+    listenersAttached = false;
+  }
 
 function onPlay(event) {
   if (!armed || event.target?.tagName !== "VIDEO") return;
@@ -37,11 +68,7 @@ function onPlay(event) {
 function onEnded(event) {
   if (!armed || event.target?.tagName !== "VIDEO") return;
   if (activeVideo && event.target !== activeVideo) return;
-  armed = false;
-  recordingActive = false;
-  activeVideo = null;
-  clearDisappearanceTimer();
-  pausedWaiting = false;
+  disarmVideoMonitor();
   chrome.runtime.sendMessage({ type: "VIDEO_ENDED", reason: "video-ended" }).catch(() => {});
 }
 
@@ -85,9 +112,11 @@ function videoArea(video) {
 function observeVideos() {
   // Play and ended events are captured at document level. The observer also
   // notices players created after recording starts and selects one already playing.
-  const observer = new MutationObserver(() => {
+  observer?.disconnect();
+  observer = new MutationObserver(() => {
     if (!armed) {
       observer.disconnect();
+      observer = null;
       return;
     }
     if (activeVideo?.isConnected === false) {
@@ -111,9 +140,7 @@ function scheduleVideoDisappearance() {
   disappearanceTimer = setTimeout(() => {
     disappearanceTimer = null;
     if (!armed || activeVideo?.isConnected !== false) return;
-    armed = false;
-    recordingActive = false;
-    activeVideo = null;
+    disarmVideoMonitor();
     chrome.runtime.sendMessage({ type: "VIDEO_ENDED", reason: "video-disappeared" }).catch(() => {});
   }, 3000);
 }
@@ -123,3 +150,4 @@ function clearDisappearanceTimer() {
   clearTimeout(disappearanceTimer);
   disappearanceTimer = null;
 }
+})();

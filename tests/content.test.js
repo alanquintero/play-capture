@@ -31,6 +31,9 @@ function loadContentScript(video) {
       addEventListener(type, listener) {
         documentListeners.set(type, listener);
       },
+      removeEventListener(type) {
+        documentListeners.delete(type);
+      },
       querySelectorAll(selector) {
         return selector === "video" ? [video] : [];
       },
@@ -55,6 +58,12 @@ function loadContentScript(video) {
   return {
     arm() {
       messageListener({ type: "ARM_VIDEO", armedAt: Date.now() - 1000 }, {}, () => {});
+    },
+    disarm() {
+      messageListener({ type: "DISARM_VIDEO" }, {}, () => {});
+    },
+    listenerCount() {
+      return documentListeners.size;
     },
     dispatch(type) {
       documentListeners.get(type)({ target: video });
@@ -162,4 +171,14 @@ test("does not start the file before the video plays", () => {
   page.arm();
 
   assert.deepEqual(page.sentMessages, []);
+});
+
+test("does not watch the page until armed and stops watching when disarmed", () => {
+  const page = loadContentScript(embeddedVideo());
+
+  assert.equal(page.listenerCount(), 0);
+  page.arm();
+  assert.equal(page.listenerCount(), 3);
+  page.disarm();
+  assert.equal(page.listenerCount(), 0);
 });

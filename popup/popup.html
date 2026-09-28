@@ -16,14 +16,22 @@
             <p>Record video from this tab</p>
           </div>
         </div>
-        <a class="support-link" href="https://buymeacoffee.com/alanquintero" target="_blank" rel="noopener noreferrer">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 8h12v5.5a5.5 5.5 0 0 1-5.5 5.5h-1A5.5 5.5 0 0 1 5 13.5V8Z"></path>
-            <path d="M17 10h1a3 3 0 0 1 0 6h-2"></path>
-            <path d="M8 5.5c0-1 1-1 1-2M12 5.5c0-1 1-1 1-2"></path>
-          </svg>
-          <span>Support the<br>Developer</span>
-        </a>
+        <div class="header-actions">
+          <a class="support-link" href="https://buymeacoffee.com/alanquintero" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 8h12v5.5a5.5 5.5 0 0 1-5.5 5.5h-1A5.5 5.5 0 0 1 5 13.5V8Z"></path>
+              <path d="M17 10h1a3 3 0 0 1 0 6h-2"></path>
+              <path d="M8 5.5c0-1 1-1 1-2M12 5.5c0-1 1-1 1-2"></path>
+            </svg>
+            <span>Support the<br>Developer</span>
+          </a>
+          <label class="extension-control" for="extension-enabled">
+            <span id="extension-state">On</span>
+            <input id="extension-enabled" type="checkbox" checked>
+            <span class="switch-track" aria-hidden="true"><span></span></span>
+            <span class="visually-hidden">Enable Play Capture</span>
+          </label>
+        </div>
       </header>
 
       <section id="capture-card" class="capture-card">

@@ -6,6 +6,8 @@ const elements = {
   primaryButton: document.querySelector("#primary-button"),
   primaryLabel: document.querySelector("#primary-label"),
   outputFormat: document.querySelector("#output-format"),
+  extensionEnabled: document.querySelector("#extension-enabled"),
+  extensionState: document.querySelector("#extension-state"),
   downloadPending: document.querySelector("#download-pending"),
   clearRecordings: document.querySelector("#clear-recordings"),
   dismissError: document.querySelector("#dismiss-error"),
@@ -38,6 +40,14 @@ elements.dismissError.addEventListener("click", async () => {
 
 elements.outputFormat.addEventListener("change", () => {
   chrome.storage.local.set({ outputFormat: elements.outputFormat.value });
+});
+
+elements.extensionEnabled.addEventListener("change", async () => {
+  elements.extensionEnabled.disabled = true;
+  const enabled = elements.extensionEnabled.checked;
+  const response = await sendMessage({ type: "SET_EXTENSION_ENABLED", enabled });
+  if (!response?.ok) elements.extensionEnabled.checked = !enabled;
+  await refresh();
 });
 
 elements.clearRecordings.addEventListener("click", async () => {
@@ -87,7 +97,7 @@ chrome.runtime.onMessage.addListener((message) => {
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "session" && changes.captureState) refresh();
-  if (area === "local" && changes.recordings) refresh();
+  if (area === "local" && (changes.recordings || changes.extensionEnabled)) refresh();
 });
 
 async function refresh() {
@@ -101,8 +111,12 @@ async function refresh() {
 function render() {
   const capture = state.capture || { status: "idle" };
   const captureActive = ["starting", "armed", "starting_recording", "recording", "paused_waiting", "stopping"].includes(capture.status);
-  elements.primaryButton.disabled = capture.status === "starting" || capture.status === "stopping";
-  elements.outputFormat.disabled = captureActive;
+  const extensionEnabled = state.extensionEnabled !== false;
+  elements.extensionEnabled.checked = extensionEnabled;
+  elements.extensionEnabled.disabled = captureActive;
+  elements.extensionState.textContent = extensionEnabled ? "On" : "Off";
+  elements.primaryButton.disabled = !extensionEnabled || capture.status === "starting" || capture.status === "stopping";
+  elements.outputFormat.disabled = !extensionEnabled || captureActive;
   if (!captureActive && state.outputFormat) elements.outputFormat.value = state.outputFormat;
   elements.primaryButton.classList.toggle("stop", ["armed", "starting_recording", "recording", "paused_waiting"].includes(capture.status));
   const dotState = capture.status === "recording"
@@ -118,7 +132,9 @@ function render() {
   elements.timer.hidden = !["recording", "paused_waiting", "stopping"].includes(capture.status);
   elements.dismissError.hidden = capture.status !== "error";
 
-  const display = {
+  const display = !extensionEnabled && capture.status === "idle"
+    ? ["Play Capture is off", "Turn it on when you want to record a tab.", "Start"]
+    : ({
     idle: ["Ready to arm", "Click Start, then press Play on the video.", "Start"],
     starting: ["Preparing capture", "Chrome is connecting to this tab…", "Preparing…"],
     armed: ["Waiting for the video", "Press Play. The saved file will begin at the first video frame.", "Cancel"],
@@ -127,7 +143,7 @@ function render() {
     paused_waiting: ["Video paused", "Recording is paused. Press Finish now to save it, or resume the video to continue.", "Finish now"],
     stopping: ["Finishing file", "Saving the recording on this device…", "Finishing…"],
     error: ["Recording error", capture.error || "Something went wrong.", "Try again"],
-  }[capture.status] || ["Ready to arm", "Click Start, then press Play on the video.", "Start"];
+    }[capture.status] || ["Ready to arm", "Click Start, then press Play on the video.", "Start"]);
 
   [elements.statusLabel.textContent, elements.statusDetail.textContent, elements.primaryLabel.textContent] = display;
   updateTimer();

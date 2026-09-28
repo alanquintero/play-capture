@@ -25,6 +25,7 @@ The current stable release is version 1.0.0. The project has automated unit cove
 - Pauses the file immediately when the lesson is paused. It stays paused until playback resumes or you click **Finish now**; it does not stop automatically just because the video is paused.
 - Also provides a manual Stop button for custom players or live streams.
 - Stores finished recordings locally in extension storage until Download or Remove is clicked.
+- Includes a persistent on/off switch. Even while on, page monitoring starts only after **Start** is clicked.
 - Shows whether each saved recording is not downloaded, downloading, downloaded, or failed.
 - Downloads every unfinished recording to Chrome's normal Downloads folder with **Download all**.
 - Does not upload video, browsing data, or recordings to a server.
@@ -113,10 +114,11 @@ Only record media you own or have permission to save.
 The extension requests these permissions for the following reasons:
 
 - `activeTab` and `tabCapture`: capture the tab only after the user starts a recording.
+- `scripting`: load the video monitor only after the user starts a recording.
 - `downloads`: save a finished recording through Chrome's download manager.
 - `offscreen`: run `MediaRecorder`, audio routing, and Blob work outside the service worker.
 - `storage` and `unlimitedStorage`: keep capture state and finished recordings locally.
-- `<all_urls>`: observe video elements in ordinary pages and embedded cross-origin frames.
+- `<all_urls>`: let the user-started video monitor work in ordinary pages and embedded cross-origin frames. No page-monitoring script is loaded until **Start** is clicked.
 
 Recordings are stored in the extension's local IndexedDB database until they are downloaded or removed. The extension has no network client, analytics, account system, or remote upload path.
 

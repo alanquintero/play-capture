@@ -24,6 +24,7 @@ function loadBackground(initialRecordings, downloadImpl = async () => 101) {
   const runtimeMessages = event();
   const downloadChanges = event();
   const downloadCalls = [];
+  const scriptCalls = [];
 
   const storageArea = (data) => ({
     async get(key) {
@@ -65,6 +66,12 @@ function loadBackground(initialRecordings, downloadImpl = async () => 101) {
       local: storageArea(local),
       session: storageArea(session),
     },
+    scripting: {
+      async executeScript(options) {
+        scriptCalls.push(structuredClone(options));
+        return [];
+      },
+    },
     tabCapture: { getMediaStreamId: async () => "stream" },
     tabs: {
       onRemoved: event(),
@@ -77,7 +84,7 @@ function loadBackground(initialRecordings, downloadImpl = async () => 101) {
   const context = { chrome, Date, Error, Map, Number, Promise, RegExp };
   vm.runInNewContext(backgroundScript, context, { filename: "background.js" });
 
-  return { context, downloadCalls, downloadChanges, local };
+  return { chrome, context, downloadCalls, downloadChanges, local, scriptCalls };
 }
 
 function recording(id, downloadStatus) {
@@ -152,4 +159,37 @@ test("bulk download continues after one recording fails to start", async () => {
   assert.equal(result.failed, 1);
   assert.equal(app.local.recordings[0].downloadStatus, "error");
   assert.equal(app.local.recordings[1].downloadStatus, "downloading");
+});
+
+test("keeps the extension enabled by default and remembers when it is turned off", async () => {
+  const app = loadBackground([]);
+
+  assert.equal(await app.context.getExtensionEnabled(), true);
+  await app.context.setExtensionEnabled(false);
+
+  assert.equal(app.local.extensionEnabled, false);
+  assert.equal(await app.context.getExtensionEnabled(), false);
+});
+
+test("does not start a recording while the extension is off", async () => {
+  const app = loadBackground([]);
+  app.local.extensionEnabled = false;
+
+  await assert.rejects(
+    app.context.startRecording("mp4"),
+    /Play Capture is off/,
+  );
+});
+
+test("loads the page monitor only when a recording starts", async () => {
+  const app = loadBackground([]);
+  app.chrome.tabs.query = async () => [{ id: 7, url: "https://example.com/lesson", title: "Lesson" }];
+
+  assert.equal(app.scriptCalls.length, 0);
+  await app.context.startRecording("mp4");
+
+  assert.deepEqual(app.scriptCalls, [{
+    target: { tabId: 7, allFrames: true },
+    files: ["content.js"],
+  }]);
 });
