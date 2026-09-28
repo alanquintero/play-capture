@@ -62,6 +62,26 @@ Chrome requires Developer mode for locally installed unpacked extensions. The re
 5. Keep the video tab open and playing. The popup can be closed.
 6. When the video ends, open the extension and download the finished recording. The item changes to **Downloaded** only after Chrome finishes saving the file. The file extension reflects the format Chrome actually selected.
 
+### Examples
+
+#### Start recording
+
+Click **Start**, then play the video. Play Capture begins recording when the video starts playing.
+
+![Starting a recording with Play Capture](docs/media/Play.gif)
+
+#### Pause recording
+
+Pause the video to pause the recording. Resume the video to continue recording.
+
+![Pausing a recording with Play Capture](docs/media/pause.gif)
+
+#### Save a finished recording
+
+When the recording is finished, open Play Capture and download the saved video.
+
+![Saving a finished recording with Play Capture](docs/media/done.gif)
+
 Use **Download all** to save every item marked **Not downloaded** or **Download failed**. Individual downloads still let you choose where to save the file; bulk downloads use Chrome's normal Downloads folder.
 
 If the player does not expose a normal HTML video end event, open the extension and click **Stop recording** yourself.
