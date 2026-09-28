@@ -1,4 +1,16 @@
 const OFFSCREEN_PATH = "offscreen/offscreen.html";
+const ENABLED_ICON_PATHS = {
+  16: "assets/icons/play-capture-16.png",
+  32: "assets/icons/play-capture-32.png",
+  48: "assets/icons/play-capture-48.png",
+  128: "assets/icons/play-capture-128.png",
+};
+const DISABLED_ICON_PATHS = {
+  16: "assets/icons/play-capture-off-16.png",
+  32: "assets/icons/play-capture-off-32.png",
+  48: "assets/icons/play-capture-off-48.png",
+  128: "assets/icons/play-capture-off-128.png",
+};
 
 const DEFAULT_STATE = {
   status: "idle",
@@ -27,9 +39,11 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   if (typeof extensionEnabled !== "boolean") {
     await chrome.storage.local.set({ extensionEnabled: true });
   }
+  await setExtensionIcon(extensionEnabled !== false);
 });
 
 chrome.runtime.onStartup.addListener(async () => {
+  await setExtensionIcon(await getExtensionEnabled());
   const state = await getCaptureState();
   if (["starting", "armed", "starting_recording", "recording", "paused_waiting", "stopping"].includes(state.status)) {
     await setCaptureState({
@@ -449,6 +463,7 @@ async function setExtensionEnabled(enabled) {
   }
   const nextEnabled = Boolean(enabled);
   await chrome.storage.local.set({ extensionEnabled: nextEnabled });
+  await setExtensionIcon(nextEnabled);
   if (!nextEnabled) {
     const tabs = await chrome.tabs.query({});
     await Promise.allSettled(tabs
@@ -462,6 +477,12 @@ function injectContentScript(tabId) {
   return chrome.scripting.executeScript({
     target: { tabId, allFrames: true },
     files: ["content.js"],
+  });
+}
+
+function setExtensionIcon(enabled) {
+  return chrome.action.setIcon({
+    path: enabled ? ENABLED_ICON_PATHS : DISABLED_ICON_PATHS,
   });
 }
 

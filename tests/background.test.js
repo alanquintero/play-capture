@@ -25,6 +25,7 @@ function loadBackground(initialRecordings, downloadImpl = async () => 101) {
   const downloadChanges = event();
   const downloadCalls = [];
   const scriptCalls = [];
+  const iconCalls = [];
 
   const storageArea = (data) => ({
     async get(key) {
@@ -40,6 +41,7 @@ function loadBackground(initialRecordings, downloadImpl = async () => 101) {
     action: {
       setBadgeBackgroundColor: async () => {},
       setBadgeText: async () => {},
+      setIcon: async (options) => iconCalls.push(structuredClone(options)),
     },
     downloads: {
       async download(options) {
@@ -84,7 +86,7 @@ function loadBackground(initialRecordings, downloadImpl = async () => 101) {
   const context = { chrome, Date, Error, Map, Number, Promise, RegExp };
   vm.runInNewContext(backgroundScript, context, { filename: "background.js" });
 
-  return { chrome, context, downloadCalls, downloadChanges, local, scriptCalls };
+  return { chrome, context, downloadCalls, downloadChanges, iconCalls, local, scriptCalls };
 }
 
 function recording(id, downloadStatus) {
@@ -169,6 +171,18 @@ test("keeps the extension enabled by default and remembers when it is turned off
 
   assert.equal(app.local.extensionEnabled, false);
   assert.equal(await app.context.getExtensionEnabled(), false);
+  assert.equal(app.iconCalls.length, 1);
+  assert.equal(app.iconCalls[0].path[16], "assets/icons/play-capture-off-16.png");
+});
+
+test("restores the colored toolbar icon when the extension is turned on", async () => {
+  const app = loadBackground([]);
+  app.local.extensionEnabled = false;
+
+  await app.context.setExtensionEnabled(true);
+
+  assert.equal(app.iconCalls.length, 1);
+  assert.equal(app.iconCalls[0].path[128], "assets/icons/play-capture-128.png");
 });
 
 test("does not start a recording while the extension is off", async () => {

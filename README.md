@@ -25,7 +25,7 @@ The current stable release is version 1.0.0. The project has automated unit cove
 - Pauses the file immediately when the lesson is paused. It stays paused until playback resumes or you click **Finish now**; it does not stop automatically just because the video is paused.
 - Also provides a manual Stop button for custom players or live streams.
 - Stores finished recordings locally in extension storage until Download or Remove is clicked.
-- Includes a persistent on/off switch. Even while on, page monitoring starts only after **Start** is clicked.
+- Includes a persistent on/off switch and turns the toolbar icon gray while off. Even while on, page monitoring starts only after **Start** is clicked.
 - Shows whether each saved recording is not downloaded, downloading, downloaded, or failed.
 - Downloads every unfinished recording to Chrome's normal Downloads folder with **Download all**.
 - Does not upload video, browsing data, or recordings to a server.
