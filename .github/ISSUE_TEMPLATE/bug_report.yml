@@ -1,0 +1,89 @@
+name: Bug report
+description: Tell us about a problem with Play Capture
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Play Capture. Please do not include private course content, recordings, account details, or other sensitive information.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you were trying to do.
+      placeholder: I started a recording, played the video, and then…
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the steps that make the problem happen.
+      placeholder: |
+        1. Open…
+        2. Click…
+        3. Play…
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: I expected…
+    validations:
+      required: true
+
+  - type: input
+    id: extension-version
+    attributes:
+      label: Play Capture version
+      description: Find this on Chrome's Extensions page.
+      placeholder: 1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: chrome-version
+    attributes:
+      label: Chrome version
+      description: Open chrome://settings/help to find this.
+      placeholder: 140.0.7339.128
+    validations:
+      required: true
+
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating system
+      placeholder: macOS 26, Windows 11, or Ubuntu 24.04
+    validations:
+      required: true
+
+  - type: dropdown
+    id: format
+    attributes:
+      label: Recording format
+      options:
+        - MP4
+        - WebM
+        - Both formats
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Additional details
+      description: Add error messages or screenshots if they help. Remove private information first.
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed private course content, recordings, account details, and other sensitive information.
+          required: true

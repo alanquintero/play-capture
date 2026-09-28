@@ -142,6 +142,10 @@ button { font: inherit; }
 .recording-actions .remove { flex: 0 0 auto; color: #9f241d; }
 .recording-actions button:disabled { cursor: wait; opacity: .6; }
 
-footer { margin-top: 18px; color: #89958e; text-align: center; font-size: 10px; }
+footer { display: flex; align-items: center; justify-content: center; gap: 9px; margin-top: 18px; color: #89958e; font-size: 10px; }
+.report-link { display: inline-flex; align-items: center; gap: 4px; padding-left: 9px; border-left: 1px solid #cdd8cf; color: #516058; font-weight: 700; text-decoration: none; }
+.report-link svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.report-link:hover { color: #163d2b; text-decoration: underline; }
+.report-link:focus-visible { border-radius: 3px; outline: 3px solid rgba(37, 99, 235, .25); outline-offset: 2px; }
 
 @keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(227, 43, 33, 0); } }

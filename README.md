@@ -66,6 +66,8 @@ Use **Download all** to save every item marked **Not downloaded** or **Download 
 
 If the player does not expose a normal HTML video end event, open the extension and click **Stop recording** yourself.
 
+If Play Capture does not work as expected, click **Report a bug** at the bottom of the extension. This opens a structured bug report on GitHub in a new tab. Reports are not sent automatically, and recordings remain on your device.
+
 ## Important limits
 
 - Protected DRM video may appear black or may not allow capture. This extension does not bypass DRM or access controls.
